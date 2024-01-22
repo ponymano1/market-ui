@@ -12,6 +12,8 @@ function NFTMarketPanel({NFTMarketAddr}) {
     const [tokenId, setTokenId] = useState<string>("0");
     const [price, setPrice] = useState<string>("0");
 
+    const [tokenIdBuy, setTokenIdBuy] = useState<string>("0");
+
     const connectWallet = async() => {
         if (window.ethereum) {
             let provider = new ethers.BrowserProvider(window.ethereum)
@@ -52,13 +54,10 @@ function NFTMarketPanel({NFTMarketAddr}) {
         await tx.wait();
     }
 
-    const listAllTokens = async () => {
-        let tokens = await contract.listAllTokens();
-        console.log("listAllTokens tx: " + tokens);
-        for (let i = 0; i < tokens.length; i++) {
-            console.log(tokens[i]);
-        }
-    }
+    // const listAllTokens = async () => {
+    //     let tokens = await contract.listAllTokens();
+    //     console.log("listAllTokens tx: " + tokens);
+    // }
 
 
     return(
@@ -74,6 +73,9 @@ function NFTMarketPanel({NFTMarketAddr}) {
                 <input type="text" placeholder="tokenId" onChange={(e) => setTokenId(e.target.value)}></input>
                 <input type="text" placeholder="price" onChange={(e) => setPrice(e.target.value)}></input>
                 <button onClick={listEx}>listEx</button>
+                <br></br>
+                <input type="text" placeholder="tokenId" onChange={(e) => setTokenIdBuy(e.target.value)}></input>
+                <button onClick={() => buy(tokenIdBuy)}>buy</button>
 
                     
             </div>

@@ -5,7 +5,7 @@ import erc20TokenAbi from "./abis/erc20TokenAbi.json"
 
 
 
-function ERC20Panel({ERC20Arr, NFTMarketArr : string}) {
+function ERC20Panel({ERC20Arr, NFTMarketArr}) {
     const [erc20Contrct, setErc20Contract] = useState<ethers.Contract | null>(null)
     const [signer, setSigner] = useState<ethers.Signer | null>(null)
     const [balance, setBalance] = useState<string>("0")
