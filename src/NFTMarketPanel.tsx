@@ -14,6 +14,8 @@ function NFTMarketPanel({NFTMarketAddr}:{NFTMarketAddr:string}) {
 
     const [tokenIdBuy, setTokenIdBuy] = useState<string>("0");
     const [eventList, setEventList] = useState<any[]>([]);
+
+    const[blockId, setBlockId] = useState<number>(0);
     
     useEffect(() => {  
         handleConnect();
@@ -23,11 +25,11 @@ function NFTMarketPanel({NFTMarketAddr}:{NFTMarketAddr:string}) {
     useEffect(() => {
         
         const interval = setInterval(() => {
-            fetchAndParseLogs(0, 10000000);
+            fetchAndParseLogs();
         }, 1000);
         return () => clearInterval(interval);
-    },[signer])
-    
+    },[signer, blockId, contract])
+
     const handleConnect = async() => {
         let provider : ethers.Provider|null = null;
         if (window.ethereum) {
@@ -63,31 +65,43 @@ function NFTMarketPanel({NFTMarketAddr}:{NFTMarketAddr:string}) {
     //     console.log("listAllTokens tx: " + tokens);
     // }
 
-    const fetchAndParseLogs = async (from : number, to : number) => {
+    const fetchAndParseLogs = async () => {
         let currentBlock = await signer?.provider?.getBlockNumber();
-        console.log("currentBlock: " + currentBlock);
-        let filter = {
-            address: NFTMarketAddr,
-            fromBlock: from,
-            toBlock: to,
-        }
-
-        if (to > currentBlock) {
-            filter.toBlock = currentBlock;
-        }
-
-        let logs = await signer?.provider?.getLogs(filter);
-        if (logs == null) {
-            console.log("logs is null");
+        
+        if (currentBlock == null) {
+            console.log("currentBlock is null");
             return;
         }
+        console.log("blockId: " + blockId); 
+        if (blockId >= currentBlock) {
+            console.log("blockId >= currentBlock");
+            return;
+        }
+        
+        const listEvent = contract?.filters.List(null, null, null);
+        const soldEvent = contract?.filters.Sold(null, null, null, null);
+        
+        let listLogs = await signer?.provider.getLogs({
+            ...listEvent,
+            fromBlock: blockId,
+            toBlock: currentBlock
+        });
 
-        let parsedLogs = logs.map((log) => {
-            contract?.interface.parseLog(log);
+        let soldLogs = await signer?.provider.getLogs({
+            ...soldEvent,
+            fromBlock: blockId,
+            toBlock: currentBlock
+        });
+
+        let parsedLogs = [...listLogs, ...soldLogs].map((log) => {
+            console.log("log: " + log);
+            return contract?.interface.parseLog(log);
         });
         console.log("parsedLogs: " + parsedLogs);
         console.log(parsedLogs);
-        setEventList(parsedLogs);
+        
+        setEventList((prevEventList) => [...prevEventList, ...parsedLogs]);
+        setBlockId(currentBlock);
     }
 
 
