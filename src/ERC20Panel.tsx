@@ -5,7 +5,7 @@ import erc20TokenAbi from "./abis/erc20TokenAbi.json"
 
 
 
-function ERC20Panel({ERC20Arr, NFTMarketArr}) {//这两个参数是否一直有值
+function ERC20Panel({ERC20Arr, NFTMarketArr}) {
     const [erc20Contrct, setErc20Contract] = useState<ethers.Contract | null>(null)
     const [signer, setSigner] = useState<ethers.Signer | null>(null)
     const [balance, setBalance] = useState<string>("0")
@@ -46,6 +46,7 @@ function ERC20Panel({ERC20Arr, NFTMarketArr}) {//这两个参数是否一直有�
         let erc20ContractObj = new ethers.Contract(ERC20Arr, erc20TokenAbi, signerObj);
         console.log("get erc20ContractObj ok");
         let walletAddrObj = await signerObj.getAddress();
+        console.log("get walletAddrObj from signerObj:" + walletAddrObj);
         let erc20Balance = await erc20ContractObj.balanceOf(walletAddrObj);
         setWalletAddr(walletAddrObj);
         setErc20Contract(erc20ContractObj);

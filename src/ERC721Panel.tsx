@@ -13,6 +13,29 @@ function NFTPanel({Erc721Addr, NFTMarketAddr}) {
     const [tokenOwner, setTokenOwner] = useState<string>("0x0");
 
     const [approveTokenId, setApproveTokenId] = useState<string>("0");
+
+    useEffect(() => {  
+        handleConnect();
+    },[])
+
+
+    
+    const handleConnect = async() => {
+        let provider : ethers.Provider|null = null;
+        if (window.ethereum) {
+            provider = new ethers.BrowserProvider(window.ethereum) 
+        } else {
+            provider = new ethers.BrowserProvider(window.ethereum)
+        }   
+        let signerObj = await provider.getSigner();   
+        setSigner(signerObj);  
+        let walletArrObj = await signerObj.getAddress();
+        setWalletAddr(walletArrObj);
+        let contract = new ethers.Contract(Erc721Addr, erc721Abi, signerObj);
+        console.log("get erc721ContractObj ok Erc721Addr: " + await contract.getAddress());
+        console.log("get erc721ContractObj ok wallet Address: " + walletArrObj);
+        setContract(contract);
+    }
  
     const connectWallet = async() => {
         if (window.ethereum) {
@@ -41,6 +64,7 @@ function NFTPanel({Erc721Addr, NFTMarketAddr}) {
     }
 
     const mint = async() => {
+        console.log("call mint");
         if (contract == null) {
             console.log("erc721 mint contract is null");
             return;
@@ -60,6 +84,7 @@ function NFTPanel({Erc721Addr, NFTMarketAddr}) {
     }
 
     const showTokenOwner = async() => {
+        console.log("call showTokenOwner");
         if (contract == null) {
             console.log("erc721 mint contract is null");
             return;
@@ -69,8 +94,8 @@ function NFTPanel({Erc721Addr, NFTMarketAddr}) {
             console.log("signer is null");
             return;
         }
-
-        let owner = await contract.ownerOf(tokenId);
+        console.log("showTokenOwner Erc721Addr: " + await contract.getAddress());
+        let owner = await contract.ownerOf(ethers.parseUnits(tokenId, "wei"));
         setTokenOwner(owner);
     }
 
@@ -97,10 +122,8 @@ function NFTPanel({Erc721Addr, NFTMarketAddr}) {
         <div>
             <h3>ERC721Panel</h3>
             <div>
-                <button onClick={connectWallet}>connect Wallet</button>
-                WalletAddr: {walletAddr}
-                <br></br>
-                <button onClick={connectContract}>connect Contract</button>
+                {walletAddr}
+                <button onClick={handleConnect}>connect Contract</button>
                 <br></br>
                 <input type="text" placeholder="toAddr" onChange={(e) => setToAddr(e.target.value)}></input>
                 <input type="text" placeholder="uri" onChange={(e) => setUri(e.target.value)}></input>

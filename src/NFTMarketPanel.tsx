@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { ethers } from "ethers";
-import nftMarketAbi from "./abis/nftMarketAbi.json"
+import { ethers, formatUnits } from "ethers";
+import nftMarketAbi from "./abis/nftMarketAbiWithSig.json"
+import erc20TokenAbi from "./abis/erc20TokenAbi.json"
 
 interface INFTPrice {tokenId: string, price: string};
 
-function NFTMarketPanel({NFTMarketAddr}:{NFTMarketAddr:string}) {
+
+function NFTMarketPanel({NFTMarketAddr, ERC20Arr}:{NFTMarketAddr:string, ERC20Arr:string}) {
     const [signer, setSigner] = useState<ethers.Signer | null>(null)
     const [contract, setContract] = useState<ethers.Contract | null>(null);
     const [walletAddr,setWalletAddr] = useState<string>("0x0");
@@ -13,9 +15,14 @@ function NFTMarketPanel({NFTMarketAddr}:{NFTMarketAddr:string}) {
     const [price, setPrice] = useState<string>("0");
 
     const [tokenIdBuy, setTokenIdBuy] = useState<string>("0");
+    const [tokenIdPrice, setTokenIdPrice] = useState<string>([0]);
+
     const [eventList, setEventList] = useState<any[]>([]);
 
     const[blockId, setBlockId] = useState<number>(0);
+
+    const [signatureTxt, setSignatureTxt] = useState<string>("0x0");
+    const [deadlineTxt, setDeadlineTxt] = useState<string>("0x0");
     
     useEffect(() => {  
         handleConnect();
@@ -24,11 +31,11 @@ function NFTMarketPanel({NFTMarketAddr}:{NFTMarketAddr:string}) {
 
     useEffect(() => {
         
-        const interval = setInterval(() => {
-            fetchAndParseLogs();
-        }, 1000);
-        return () => clearInterval(interval);
-    },[signer, blockId, contract])
+        // const interval = setInterval(() => {
+        //     fetchAndParseLogs();
+        // }, 3000);
+        // return () => clearInterval(interval);
+    },[signer, blockId, contract, eventList])
 
     const handleConnect = async() => {
         let provider : ethers.Provider|null = null;
@@ -47,17 +54,50 @@ function NFTMarketPanel({NFTMarketAddr}:{NFTMarketAddr:string}) {
 
 
     const listEx = async () => {
-        let tx = await contract.listEx(ethers.parseUnits(tokenId, "wei"), ethers.parseUnits(price, 18));
+        let tx = await contract.list(ethers.parseUnits(tokenId, "wei"), ethers.parseUnits(price, 18));
         console.log("listEx tx: " + tx);
         console.log(tx)
         await tx.wait();
     }
 
     const buy = async (tokenId : string) => {
+        let price = await contract.getPrice(ethers.parseUnits(tokenId, "wei"));
+        if (price == null) {
+            console.log("price is null");
+            return;
+        }
+
+        let erc20Contract = new ethers.Contract(ERC20Arr, erc20TokenAbi, signer);
+        let approved = await erc20Contract.allowance(walletAddr, NFTMarketAddr);
+        if (approved < price) {
+            let tx = await erc20Contract.approve(NFTMarketAddr, price);
+            await tx.wait();
+        }
         let tx = await contract.buy(ethers.parseUnits(tokenId, "wei"));
         console.log("buy tx: " + tx);
         console.log(tx)
         await tx.wait();
+    }
+
+    const handlePermitBuy = async () => {
+        let tx = await permitAndBuy(tokenId, signatureTxt, deadlineTxt);
+        tx.wait();
+    }
+
+    const permitAndBuy = async (tokenId : string, signature : string, deadline : string) => {
+        const splitSig = ethers.Signature.from(signature);
+        console.log("splitSig:",splitSig);
+        let tx = await contract.permitAndBuy(ethers.parseUnits(tokenId, "wei") , signer.getAddress() , ethers.parseUnits(deadline, "wei"), splitSig.v, splitSig.r, splitSig.s);
+        console.log("permitAndBuy tx: " + tx);
+
+        tx.wait();
+
+    }
+
+    const showPrice = async () => { 
+        let price = await contract.getPrice(ethers.parseUnits(tokenIdBuy, "wei"));
+        console.log("showPrice tx: " + price);
+        setTokenIdPrice(formatUnits(price, 18));
     }
 
     // const listAllTokens = async () => {
@@ -93,12 +133,35 @@ function NFTMarketPanel({NFTMarketAddr}:{NFTMarketAddr:string}) {
             toBlock: currentBlock
         });
 
-        let parsedLogs = [...listLogs, ...soldLogs].map((log) => {
-            console.log("log: " + log);
-            return contract?.interface.parseLog(log);
+        let parsedListLogs = listLogs
+        .map((log) => { 
+            let logObj =  contract?.interface.parseLog(log) 
+            //console.log(logObj);
+            return logObj;
+        })
+        .filter(parsedLog => parsedLog?.name)
+        .filter(parsedLog => parsedLog.name === "List")
+        .map(parsedLog => {
+            const {tokenId, from, price} = parsedLog.args;
+            console.log("List tokenId: " + tokenId + " from: " + from + " price: " + price);
+            //返回字符串
+            return {event: "List", tokenId: formatUnits(tokenId), from: from, price: formatUnits(price)};
         });
-        console.log("parsedLogs: " + parsedLogs);
-        console.log(parsedLogs);
+
+        let parsedSoldLogs = soldLogs
+        .map((log) => { return contract?.interface.parseLog(log) })
+        .filter(parsedLog => parsedLog?.name != null)
+        .filter(parsedLog => parsedLog.name === "Sold")
+        .map(parsedLog => {
+            const {tokenId, from, to, price} = parsedLog.args;
+            console.log("Sold tokenId: " + tokenId + " from: " + from + " to: " + to + " price: " + price);
+            //返回字符串
+            return {event: "Sold", tokenId: formatUnits(tokenId), from: from, to: to, price: formatUnits(price)};
+        });
+
+
+        let parsedLogs = [...parsedListLogs, ...parsedSoldLogs]
+
         
         setEventList((prevEventList) => [...prevEventList, ...parsedLogs]);
         setBlockId(currentBlock);
@@ -119,7 +182,22 @@ function NFTMarketPanel({NFTMarketAddr}:{NFTMarketAddr:string}) {
                 <button onClick={listEx}>listEx</button>
                 <br></br>
                 <input type="text" placeholder="tokenId" onChange={(e) => setTokenIdBuy(e.target.value)}></input>
+                {tokenIdPrice}
+                <button onClick={showPrice}>showPrice</button>
                 <button onClick={() => buy(tokenIdBuy)}>buy</button>
+
+                 <div>
+                    <input type="text" placeholder="tokenId" onChange={(e) => setTokenIdBuy(e.target.value)}></input>
+                    <input type="text" placeholder="signature" onChange={(e) => setSignatureTxt(e.target.value)}></input>
+                    <input type="text" placeholder="deadline" onChange={(e) => setDeadlineTxt(e.target.value)}></input>
+                    <button onClick={handlePermitBuy}>permitAndBuy</button>
+                </div> 
+
+                <ul>
+                    {eventList.map((event, index) => {
+                        return <li key={index}>{JSON.stringify(event, null, 2)}</li>
+                    })}
+                </ul>
 
                     
             </div>

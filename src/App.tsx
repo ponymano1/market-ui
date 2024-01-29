@@ -4,10 +4,15 @@ import './App.css'
 import  ERC20Panel  from './ERC20Panel'
 import NFTPanel  from './ERC721Panel'
 import NFTMarketPanel from './NFTMarketPanel'
+import NFTMarketAdminPanel from './NFTMarketAdminPanel'
 
 const erc20Addr = "0x8464135c8F25Da09e49BC8782676a84730C318bC";
-const nftMarketAddr = "0x0b48aF34f4c854F5ae1A3D587da471FeA45bAD52";
+const nftMarketAddr = "0xfbAb4aa40C202E4e80390171E82379824f7372dd";
 const erc721Addr = "0xbCF26943C0197d2eE0E5D05c716Be60cc2761508";
+
+// const erc20Addr = "0xf740CcC19Dc26d34F86c70F3d67c1AC69A2c7330";
+// const nftMarketAddr = "0xBDC2e744B4A111234e5A76d48e1089dCBa35a392";
+// const erc721Addr = "0x14892F51c774ee5811FF53613153C7BaeeddC7DA";
 
 function App() {
   const [count, setCount] = useState(0)
@@ -36,23 +41,11 @@ function App() {
 
   return (
     <>
-
-      <h3>NFTMarket</h3>
-     
-      <div className="card">
-        <button onClick={handleWalletConnect}>connect wallet</button>
-        <br></br>
-        Wallet: {walletAddr}
-      
-        <button onClick={() => setCount((count) => count + 2)}>
-          count is {count}
-        </button>
-        
-      </div>
       <div>
         <ERC20Panel ERC20Arr = {erc20Addr} NFTMarketArr = {nftMarketAddr}/>
         <NFTPanel Erc721Addr = {erc721Addr} NFTMarketAddr = {nftMarketAddr}/>
-        <NFTMarketPanel  NFTMarketAddr = {nftMarketAddr}/>
+        <NFTMarketPanel  NFTMarketAddr = {nftMarketAddr} ERC20Arr={erc20Addr}/>
+        <NFTMarketAdminPanel  NFTMarketAddr = {nftMarketAddr} ERC20Arr={erc20Addr}/>
         
       </div>
 
