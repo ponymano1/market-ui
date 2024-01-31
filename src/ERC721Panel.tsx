@@ -117,6 +117,23 @@ function NFTPanel({Erc721Addr, NFTMarketAddr}) {
         
     }
 
+    const approveAll = async() => {
+        console.log("call approveAll");
+        if (contract == null) {
+            console.log("erc721 mint contract is null");
+            return;
+        }
+
+        if (signer == null) {
+            console.log("signer is null");
+            return;
+        }
+
+        let tx = await contract.setApprovalForAll(NFTMarketAddr, true);
+        await tx.wait();
+        console.log("approveAll: " + NFTMarketAddr);
+    }
+
 
     return(
         <div>
@@ -136,6 +153,7 @@ function NFTPanel({Erc721Addr, NFTMarketAddr}) {
                 <br></br>
                 <input type="text" placeholder="tokenId" onChange={(e) => setApproveTokenId(e.target.value)}></input>
                 <button onClick={approve}>approve</button>
+                <button onClick={approveAll}>approveAll</button>
 
                     
             </div>

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { ethers, formatUnits } from "ethers";
-import nftMarketAbi from "./abis/nftMarketAbiWithSig.json"
+import nftMarketAbi from "./abis/nftmarketV2abi.json"
 import erc20TokenAbi from "./abis/erc20TokenAbi.json"
 import {getSigner} from './ethUtil'
 
@@ -49,8 +49,9 @@ function NFTMarketAdminPanel({NFTMarketAddr, ERC20Arr}:{NFTMarketAddr:string, ER
 
     const computeSignature = async (tokenId : string, permitAddr : string) : {string, number} => {
         console.log(`computeSignature tokenId: ${tokenId}, permitAddr: ${permitAddr}`);
-        let name =  "aa";//这个name是部署时712的name
-        console.log("name:"+name);
+        let name =  contract?.name();//这个name是部署时712的name
+        let version =  contract?.version();
+        console.log("name:"+name + ", version:" + version);
         
         let chainId = (await signer?.provider?.getNetwork()).chainId
         let contractAddr = await contract?.getAddress();
@@ -58,7 +59,7 @@ function NFTMarketAdminPanel({NFTMarketAddr, ERC20Arr}:{NFTMarketAddr:string, ER
         
         const domain = {
             name: name, //这个name是部署时712的name
-            version: "01", //这个name是部署时712的version,都是通过构造函数传过去的
+            version: version, //这个name是部署时712的version,都是通过构造函数传过去的
             chainId: chainId,
             verifyingContract: contractAddr
         };
@@ -102,6 +103,8 @@ function NFTMarketAdminPanel({NFTMarketAddr, ERC20Arr}:{NFTMarketAddr:string, ER
         
         checkSig(tokenId, permitAddr, deadline.toString(), sigStr);
     }
+
+    
 
     
     

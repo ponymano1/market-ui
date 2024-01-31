@@ -7,7 +7,7 @@ import NFTMarketPanel from './NFTMarketPanel'
 import NFTMarketAdminPanel from './NFTMarketAdminPanel'
 
 const erc20Addr = "0x8464135c8F25Da09e49BC8782676a84730C318bC";
-const nftMarketAddr = "0xfbAb4aa40C202E4e80390171E82379824f7372dd";
+const nftMarketAddr = "0x5370F78c6af2Da9cF6642382A3a75F9D5aEc9cc1";
 const erc721Addr = "0xbCF26943C0197d2eE0E5D05c716Be60cc2761508";
 
 // const erc20Addr = "0xf740CcC19Dc26d34F86c70F3d67c1AC69A2c7330";
